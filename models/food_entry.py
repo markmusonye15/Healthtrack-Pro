@@ -1,29 +1,27 @@
 from datetime import date
-from sqlalchemy import Column, Integer, String, Date, ForeignKey, Float, CheckConstraint
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, Float
 from sqlalchemy.orm import relationship, validates
-from .base import BaseModel
-from .user import User  # Imported for type hints
+from .base import Base
+ 
+  # Imported for type hints
 
-class FoodEntry(BaseModel):
-    """Tracks nutritional intake for users"""
+class FoodEntry(Base):
+    
     __tablename__ = "food_entries"
-    __table_args__ = (
-        CheckConstraint('calories > 0', name='positive_calories'),
-        CheckConstraint('protein >= 0', name='non_negative_protein'),
-        CheckConstraint('carbs >= 0', name='non_negative_carbs'),
-        CheckConstraint('fats >= 0', name='non_negative_fats')
-    )
+    
+
 
     # Core Fields
     id = Column(Integer, primary_key=True)
     food_name = Column(String(100), nullable=False)
     calories = Column(Integer, nullable=False)
     date = Column(Date, default=date.today(), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     
     # Macronutrients (optional)
-    protein = Column(Float, default=0.0)
-    carbs = Column(Float, default=0.0)
-    fats = Column(Float, default=0.0)
+    protein = Column(Float)
+    carbs = Column(Float)
+    fats = Column(Float)
     
     # Relationships
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
@@ -49,3 +47,4 @@ class FoodEntry(BaseModel):
             'carbs': self.carbs,
             'fats': self.fats
         }
+    user = relationship("User", back_populates="food_entries")
