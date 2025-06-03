@@ -5,6 +5,9 @@ from database import SessionLocal, init_db
 from models.user import User
 from models.food_entry import FoodEntry
 from models.goal import Goal
+from operations.food_log import FoodLogOps
+from operations.goal_tracking import GoalOps
+from operations.meal_planning import MealPlanOps
 
 app = typer.Typer()
 
@@ -137,6 +140,49 @@ def daily_report(user_name: str):
         typer.echo(f"\n📊 Daily Report for {user_name} ({today})")
         typer.echo(f"🍽️ Total Calories: {total_cal}/{goal.daily_calories if goal else 'N/A'}")
         
+    finally:
+        db.close()
+
+@app.command()
+def quick_log(user_id: int, food: str, calories: int):
+    """Quickly log a meal (uses today's date)"""
+    from operations.food_log import FoodLogOps
+    db = SessionLocal()
+    try:
+        ops = FoodLogOps(db)
+        entry = ops.log_meal(user_id, food, calories)
+        typer.echo(f"✅ Logged {food} ({calories} cal) for user #{user_id}")
+    finally:
+        db.close()
+
+@app.command()
+def daily_progress(user_id: int, date_str: str = None):
+    """View daily progress report"""
+    from operations.goal_tracking import GoalOps
+    from datetime import date
+    
+    db = SessionLocal()
+    try:
+        target_date = date.today() if not date_str else date.fromisoformat(date_str)
+        ops = GoalOps(db)
+        progress = ops.get_progress(user_id, target_date)
+        
+        typer.echo(f"\n📊 Daily Report ({target_date})")
+        typer.echo(f"🍽️ Total Calories: {progress['total_calories']}")
+        if progress['daily_goal']:
+            typer.echo(f"🎯 Goal: {progress['daily_goal']} (Remaining: {progress['remaining']})")
+    finally:
+        db.close()
+
+@app.command()
+def plan_week(user_id: int):
+    """Generate a new weekly meal plan"""
+    from operations.meal_planning import MealPlanOps
+    db = SessionLocal()
+    try:
+        ops = MealPlanOps(db)
+        plan = ops.create_weekly_plan(user_id)
+        typer.echo(f"✅ Created meal plan from {plan.start_date} to {plan.end_date}")
     finally:
         db.close()
         
