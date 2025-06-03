@@ -140,6 +140,8 @@ def daily_report(user_name: str):
     finally:
         db.close()
         
-
+if __name__ == "__main__":
+    init_db()  # Ensure tables are created
+    app()
     
         
