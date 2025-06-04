@@ -1,7 +1,7 @@
 ## Nutritional goals model
 from sqlalchemy import Column, Integer, ForeignKey, Float  
 from sqlalchemy.orm import relationship
-from .base import Base
+from database import Base
 
 class Goal(Base):
     __tablename__ = "goals"

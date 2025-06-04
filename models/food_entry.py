@@ -1,7 +1,7 @@
 from datetime import date
 from sqlalchemy import Column, Integer, String, Date, ForeignKey, Float
 from sqlalchemy.orm import relationship, validates
-from .base import Base
+from database import Base
  
   # Imported for type hints
 
