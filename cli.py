@@ -1,7 +1,7 @@
 import typer
 from logging_config import setup_logging
 import logging
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
 from sqlalchemy.orm import Session
 from database import SessionLocal, init_db
@@ -11,6 +11,7 @@ from models.goal import Goal
 from operations.food_log import FoodLogOps
 from operations.goal_tracking import GoalOps
 from operations.meal_planning import MealPlanner
+import sys
 
 # Initialize app and logging
 app = typer.Typer(rich_markup_mode="markdown")
@@ -80,7 +81,6 @@ def entry_add(
     db = SessionLocal()
     try:
         user_obj = get_user_by_name(db, user)
-        
         
         if date_str is None:
             entry_date = date.today()
@@ -339,6 +339,252 @@ def plan_meal_update(
     finally:
         db.close()
 
+# =============================================
+# Interactive UI Implementation
+# =============================================
+
+def display_menu():
+    """Display the main menu"""
+    print("\n" + "="*50)
+    print("HealthTrack Pro - Main Menu")
+    print("="*50)
+    print("1. User Management")
+    print("2. Food Entry Management")
+    print("3. Goal Management")
+    print("4. Reports")
+    print("5. Meal Planning")
+    print("0. Exit")
+    print("="*50)
+
+def user_management_menu():
+    """Display user management menu"""
+    print("\n" + "="*50)
+    print("User Management")
+    print("="*50)
+    print("1. Create User")
+    print("2. List Users")
+    print("0. Back to Main Menu")
+    print("="*50)
+
+def food_entry_menu():
+    """Display food entry menu"""
+    print("\n" + "="*50)
+    print("Food Entry Management")
+    print("="*50)
+    print("1. Add Food Entry")
+    print("2. List Food Entries")
+    print("3. Update Food Entry")
+    print("4. Delete Food Entry")
+    print("0. Back to Main Menu")
+    print("="*50)
+
+def goal_management_menu():
+    """Display goal management menu"""
+    print("\n" + "="*50)
+    print("Goal Management")
+    print("="*50)
+    print("1. Set Goals")
+    print("2. List Goals")
+    print("0. Back to Main Menu")
+    print("="*50)
+
+def reports_menu():
+    """Display reports menu"""
+    print("\n" + "="*50)
+    print("Reports")
+    print("="*50)
+    print("1. Daily Report")
+    print("0. Back to Main Menu")
+    print("="*50)
+
+def meal_planning_menu():
+    """Display meal planning menu"""
+    print("\n" + "="*50)
+    print("Meal Planning")
+    print("="*50)
+    print("1. Generate Meal Plan")
+    print("2. Update Meal Plan Entry")
+    print("0. Back to Main Menu")
+    print("="*50)
+
+def get_input(prompt: str, required: bool = True) -> str:
+    """Helper function to get user input"""
+    while True:
+        user_input = input(prompt).strip()
+        if not user_input and required:
+            print("This field is required. Please try again.")
+            continue
+        return user_input
+
+def get_date_input(prompt: str) -> Optional[str]:
+    """Helper function to get date input"""
+    while True:
+        date_str = input(prompt + " (YYYY-MM-DD, leave blank for today): ").strip()
+        if not date_str:
+            return None
+        try:
+            date.fromisoformat(date_str)
+            return date_str
+        except ValueError:
+            print("Invalid date format. Please use YYYY-MM-DD.")
+
+def run_cli():
+    """Main function to run the CLI interface"""
+    while True:
+        display_menu()
+        choice = get_input("Enter your choice: ")
+        
+        if choice == "0":
+            print("Exiting HealthTrack CLI. Goodbye!")
+            sys.exit(0)
+            
+        elif choice == "1":  # User Management
+            while True:
+                user_management_menu()
+                sub_choice = get_input("Enter your choice: ")
+                
+                if sub_choice == "0":
+                    break
+                elif sub_choice == "1":  # Create User
+                    name = get_input("Enter user name: ")
+                    user_create(name=name)
+                elif sub_choice == "2":  # List Users
+                    user_list()
+                else:
+                    print("Invalid choice. Please try again.")
+                    
+        elif choice == "2":  # Food Entry Management
+            while True:
+                food_entry_menu()
+                sub_choice = get_input("Enter your choice: ")
+                
+                if sub_choice == "0":
+                    break
+                elif sub_choice == "1":  # Add Food Entry
+                    user = get_input("Enter user name: ")
+                    food = get_input("Enter food name: ")
+                    calories = get_input("Enter calories: ")
+                    date_str = get_date_input("Enter date: ")
+                    
+                    try:
+                        calories_int = int(calories)
+                        entry_add(user=user, food=food, calories=calories_int, date_str=date_str)
+                    except ValueError:
+                        print("Calories must be a number. Please try again.")
+                        
+                elif sub_choice == "2":  # List Food Entries
+                    user = get_input("Enter user name (leave blank for all users): ", required=False)
+                    date_str = get_date_input("Enter date: ")
+                    entry_list(user=user if user else None, date=date_str)
+                    
+                elif sub_choice == "3":  # Update Food Entry
+                    entry_id = get_input("Enter entry ID to update: ")
+                    food = get_input("Enter new food name (leave blank to keep current): ", required=False)
+                    calories = get_input("Enter new calories (leave blank to keep current): ", required=False)
+                    date_str = get_date_input("Enter new date: ")
+                    
+                    try:
+                        entry_id_int = int(entry_id)
+                        calories_int = int(calories) if calories else None
+                        entry_update(
+                            id=entry_id_int,
+                            food=food if food else None,
+                            calories=calories_int,
+                            date=date_str
+                        )
+                    except ValueError:
+                        print("ID and calories must be numbers. Please try again.")
+                        
+                elif sub_choice == "4":  # Delete Food Entry
+                    entry_id = get_input("Enter entry ID to delete: ")
+                    try:
+                        entry_id_int = int(entry_id)
+                        entry_delete(id=entry_id_int)
+                    except ValueError:
+                        print("ID must be a number. Please try again.")
+                else:
+                    print("Invalid choice. Please try again.")
+                    
+        elif choice == "3":  # Goal Management
+            while True:
+                goal_management_menu()
+                sub_choice = get_input("Enter your choice: ")
+                
+                if sub_choice == "0":
+                    break
+                elif sub_choice == "1":  # Set Goals
+                    user = get_input("Enter user name: ")
+                    daily = get_input("Enter daily calorie goal: ")
+                    weekly = get_input("Enter weekly calorie goal: ")
+                    
+                    try:
+                        daily_int = int(daily)
+                        weekly_int = int(weekly)
+                        goal_set(user=user, daily=daily_int, weekly=weekly_int)
+                    except ValueError:
+                        print("Goals must be numbers. Please try again.")
+                        
+                elif sub_choice == "2":  # List Goals
+                    user = get_input("Enter user name: ")
+                    goal_list(user=user)
+                else:
+                    print("Invalid choice. Please try again.")
+                    
+        elif choice == "4":  # Reports
+            while True:
+                reports_menu()
+                sub_choice = get_input("Enter your choice: ")
+                
+                if sub_choice == "0":
+                    break
+                elif sub_choice == "1":  # Daily Report
+                    user = get_input("Enter user name: ")
+                    date_str = get_date_input("Enter date: ")
+                    report_daily(user=user, date_str=date_str)
+                else:
+                    print("Invalid choice. Please try again.")
+                    
+        elif choice == "5":  # Meal Planning
+            while True:
+                meal_planning_menu()
+                sub_choice = get_input("Enter your choice: ")
+                
+                if sub_choice == "0":
+                    break
+                elif sub_choice == "1":  # Generate Meal Plan
+                    user = get_input("Enter user name: ")
+                    weeks = get_input("Enter number of weeks to plan (default 1): ", required=False)
+                    
+                    try:
+                        weeks_int = int(weeks) if weeks else 1
+                        plan_meal_generate(user=user, weeks=weeks_int)
+                    except ValueError:
+                        print("Weeks must be a number. Please try again.")
+                        
+                elif sub_choice == "2":  # Update Meal Plan Entry
+                    entry_id = get_input("Enter meal plan entry ID: ")
+                    meal = get_input("Enter new meal name (leave blank to keep current): ", required=False)
+                    calories = get_input("Enter new calories (leave blank to keep current): ", required=False)
+                    
+                    try:
+                        entry_id_int = int(entry_id)
+                        calories_int = int(calories) if calories else None
+                        plan_meal_update(
+                            id=entry_id_int,
+                            meal=meal if meal else None,
+                            calories=calories_int
+                        )
+                    except ValueError:
+                        print("ID and calories must be numbers. Please try again.")
+                else:
+                    print("Invalid choice. Please try again.")
+        else:
+            print("Invalid choice. Please try again.")
+
 if __name__ == "__main__":
     init_db()
-    app()
+    
+    if len(sys.argv) == 1:
+        run_cli()  # Launch the interactive UI
+    else:
+        app()  
