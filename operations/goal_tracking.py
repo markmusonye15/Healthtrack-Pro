@@ -25,6 +25,9 @@ class GoalOps:
         
         goal.daily_calories = daily
         goal.weekly_calories = weekly
+        
+        
+        
         self.db.commit()
         return goal
     

@@ -10,10 +10,9 @@ class FoodLogOps:
     def log_meal(
         self, 
         user_id: int, 
-        food: str, 
+        food_name: str, 
         calories: int, 
         meal_date: date = None,
-        meal_type: Optional[str] = None
     ) -> FoodEntry:
         """Log a food entry with automatic date handling
         
@@ -34,11 +33,11 @@ class FoodLogOps:
             raise ValueError("Calories cannot be negative")
             
         entry = FoodEntry(
-            food_name=food,
+            food_name=food_name,
             calories=calories,
             date=meal_date or date.today(),
             user_id=user_id,
-            meal_type=meal_type
+            
         )
         self.db.add(entry)
         self.db.commit()
@@ -46,19 +45,12 @@ class FoodLogOps:
         return entry
     
     def get_daily_logs(self, user_id: int, target_date: date) -> List[FoodEntry]:
-        """Get all food entries for a specific day
-        
-        Args:
-            user_id: ID of the user
-            target_date: Date to retrieve logs for
-            
-        Returns:
-            List of FoodEntry objects for the specified date
-        """
+      
+        """Get all food entries for a specific day (simplified without meal grouping)"""
         return self.db.query(FoodEntry).filter(
-            FoodEntry.user_id == user_id,
-            FoodEntry.date == target_date
-        ).order_by(FoodEntry.id).all()
+        FoodEntry.user_id == user_id,
+        FoodEntry.date == target_date
+    ).order_by(FoodEntry.id).all()
     
     def get_logs_in_range(
         self, 
